@@ -1,0 +1,117 @@
+name: 'Upload to S3'
+description: ''
+inputs:
+  MESSAGE_TEXT:
+    description: 'Comment'
+    required: true
+    default: 'None'
+  SLACK_TOKEN:
+    description: 'SLACK TOKEN'
+    required: true
+    default: 'no token'
+  CHANNELS:
+    description: 'Slack channels ID where message will be posted (separated with ,)'
+    required: true
+    default: '' 
+  FILENAME:
+    description: 'Attachment'
+    required: false
+    default: ''
+  TIMEOUT:
+    description: 'for large files'
+    required: false
+    default: '74'
+  ERROR_TEXT:
+    description: 'Message, if file was not uploaded'
+    required: false
+    default: '⚠ Ошибка прикрепления файла'
+  TS:
+    description: 'Timestamp for reply in thread'
+    required: false
+    default: ''
+  REACTION:
+    description: 'Reaction on message'
+    required: false
+    default: ''
+  BOTPIC:
+    description: Bot Avatar
+    required: false
+    default: ''
+outputs:
+  ts:
+    description: "Output timestamp"
+    value: ${{ steps.ts-out.outputs.TS }}
+
+
+runs:
+  using: "composite"
+  steps: 
+    - name: Send Text
+      if: inputs.TS == ''
+      shell: bash
+      run: |
+        echo "Send Message to Slack"
+        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
+                -d text="${{ inputs.MESSAGE_TEXT }}" \
+                -d channel=${{ inputs.CHANNELS }} \
+                -d icon_url="${{ inputs.BOTPIC }}" \
+                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
+                https://slack.com/api/chat.postMessage)
+        echo $response
+        TS=$(echo $response | jq -r ".ts") 
+        echo TS="$TS" >> $GITHUB_ENV
+        CHANNEL=$(echo $response | jq -r ".channel") 
+        echo CHANNEL=$CHANNEL >> $GITHUB_ENV
+      
+    - name: Send Text in thread
+      if: inputs.TS != ''
+      shell: bash
+      run: |
+        echo "Send Message to Slack"
+        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
+                -d text="${{ inputs.MESSAGE_TEXT }}" \
+                -d thread_ts="${{ inputs.TS }}" \
+                -d channel=${{ inputs.CHANNELS }} \
+                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
+                https://slack.com/api/chat.postMessage)
+        echo $response
+        TS=$(echo $response | jq -r ".ts") 
+        echo TS="$TS" >> $GITHUB_ENV
+        CHANNEL=$(echo $response | jq -r ".channel") 
+        echo CHANNEL=$CHANNEL >> $GITHUB_ENV
+
+    - name: Output ts
+      shell: bash
+      id: ts-out
+      run: |
+        echo TS=${{ env.TS }}
+        TS=${{ env.TS }}
+        echo "::set-output name=ts::$(echo $TS)"
+
+    - name: Check status and Send again curl
+      if: inputs.FILENAME != ''
+      shell: bash
+      run: |
+        echo "Send file(${{ inputs.FILENAME }}) to Slack" 
+        echo "to ts=${{ env.TS }}"
+        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
+                -F file=@${{ inputs.FILENAME }} \
+                -F thread_ts=${{ env.TS }} \
+                -F channels=${{ inputs.CHANNELS }} \
+                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
+                https://slack.com/api/files.upload)
+        echo $response
+
+    - name: REACTION test
+      if: inputs.REACTION != ''
+      shell: bash
+      run: |
+        echo "Send Reaction" 
+        echo "to ts=${{ env.TS }} in ${{ env.CHANNEL }}"
+        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
+                -d name="${{ inputs.REACTION }}" \
+                -d timestamp=${{ env.TS }} \
+                -d channel=${{ env.CHANNEL }} \
+                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
+                https://slack.com/api/reactions.add)
+        echo $response

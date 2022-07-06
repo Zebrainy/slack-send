@@ -1,0 +1,21 @@
+name: Test Slacksend
+
+on:
+  push:
+    branches:
+      - dev
+
+env:
+  CHANNEL_NAME: ci_cd_jnqa_test
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Message
+        uses: Zebrainy/slack-send@v1
+        with:
+          MESSAGE_TEXT: Slack texst
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          CHANNELS: ${{ env.CHANNEL_NAME }}
