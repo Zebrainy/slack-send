@@ -67,13 +67,14 @@ runs:
       if: inputs.TS != ''
       shell: bash
       run: |
-        echo "Send Message to Slack"
+        echo "Send Message with file to Slack"
         response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
-                -d text="${{ inputs.MESSAGE_TEXT }}" \
-                -d thread_ts="${{ inputs.TS }}" \
-                -d channel=${{ inputs.CHANNELS }} \
+                -F file=@${{ inputs.FILENAME }} \
+                -F text="${{ inputs.MESSAGE_TEXT }} \
+                -F thread_ts=${{ env.TS }} \
+                -F channels=${{ inputs.CHANNELS }} \
                 -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
-                https://slack.com/api/chat.postMessage)
+                https://slack.com/api/files.upload)
         echo $response
         TS=$(echo $response | jq -r ".ts") 
         echo TS="$TS" >> $GITHUB_ENV
@@ -88,19 +89,19 @@ runs:
         TS=${{ env.TS }}
         echo "::set-output name=ts::$(echo $TS)"
 
-    - name: Check status and Send again curl
-      if: inputs.FILENAME != ''
-      shell: bash
-      run: |
-        echo "Send file(${{ inputs.FILENAME }}) to Slack" 
-        echo "to ts=${{ env.TS }}"
-        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
-                -F file=@${{ inputs.FILENAME }} \
-                -F thread_ts=${{ env.TS }} \
-                -F channels=${{ inputs.CHANNELS }} \
-                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
-                https://slack.com/api/files.upload)
-        echo $response
+    # - name: Check status and Send again curl
+    #   if: inputs.FILENAME != ''
+    #   shell: bash
+    #   run: |
+    #     echo "Send file(${{ inputs.FILENAME }}) to Slack" 
+    #     echo "to ts=${{ env.TS }}"
+    #     response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
+    #             -F file=@${{ inputs.FILENAME }} \
+    #             -F thread_ts=${{ env.TS }} \
+    #             -F channels=${{ inputs.CHANNELS }} \
+    #             -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
+    #             https://slack.com/api/files.upload)
+    #     echo $response
 
     - name: REACTION test
       if: inputs.REACTION != ''

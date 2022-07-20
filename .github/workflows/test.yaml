@@ -13,9 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Make files
+        run: echo "test-${{github.run_id}}" > test.txt
       - name: Message
-        uses: Zebrainy/slack-send@v1
+        uses: Zebrainy/slack-send@dev
         with:
           MESSAGE_TEXT: Slack texst
-          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.CI_CD_SLACK_TOKEN }}
+          FILENAME: test.txt
           CHANNELS: ${{ env.CHANNEL_NAME }}
