@@ -53,7 +53,7 @@ runs:
         echo "Send Message with file to Slack"
         response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
                 -F file=@${{ inputs.FILENAME }} \
-                -F text="${{ inputs.MESSAGE_TEXT }} \
+                -F text="${{ inputs.MESSAGE_TEXT }}" \
                 -F thread_ts=${{ env.TS }} \
                 -F channels=${{ inputs.CHANNELS }} \
                 -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
