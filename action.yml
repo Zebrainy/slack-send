@@ -50,23 +50,6 @@ runs:
       if: inputs.TS == ''
       shell: bash
       run: |
-        echo "Send Message to Slack"
-        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
-                -d text="${{ inputs.MESSAGE_TEXT }}" \
-                -d channel=${{ inputs.CHANNELS }} \
-                -d icon_url="${{ inputs.BOTPIC }}" \
-                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
-                https://slack.com/api/chat.postMessage)
-        echo $response
-        TS=$(echo $response | jq -r ".ts") 
-        echo TS="$TS" >> $GITHUB_ENV
-        CHANNEL=$(echo $response | jq -r ".channel") 
-        echo CHANNEL=$CHANNEL >> $GITHUB_ENV
-      
-    - name: Send Text in thread
-      if: inputs.TS != ''
-      shell: bash
-      run: |
         echo "Send Message with file to Slack"
         response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
                 -F file=@${{ inputs.FILENAME }} \
@@ -75,6 +58,24 @@ runs:
                 -F channels=${{ inputs.CHANNELS }} \
                 -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
                 https://slack.com/api/files.upload)
+        echo $response
+        TS=$(echo $response | jq -r ".ts") 
+        echo TS="$TS" >> $GITHUB_ENV
+        CHANNEL=$(echo $response | jq -r ".channel") 
+        echo CHANNEL=$CHANNEL >> $GITHUB_ENV
+
+      
+    - name: Send Text in thread
+      if: inputs.TS != ''
+      shell: bash
+      run: |
+        echo "Send Message to Slack"
+        response=$(curl --connect-timeout ${{ inputs.TIMEOUT }} \
+                -d text="${{ inputs.MESSAGE_TEXT }}" \
+                -d thread_ts="${{ inputs.TS }}" \
+                -d channel=${{ inputs.CHANNELS }} \
+                -H "Authorization: Bearer ${{ inputs.SLACK_TOKEN }}" \
+                https://slack.com/api/chat.postMessage)
         echo $response
         TS=$(echo $response | jq -r ".ts") 
         echo TS="$TS" >> $GITHUB_ENV

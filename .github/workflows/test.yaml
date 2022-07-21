@@ -3,7 +3,7 @@ name: Test Slacksend
 on:
   push:
     branches:
-      - dev
+      - xdev
 
 env:
   CHANNEL_NAME: ci_cd_jnqa_test
